@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Chat - Dark Mode</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #121212;
+      color: #f1f1f1;
+    }
+
+    #chat-box {
+      height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+      background: #1e1e1e;
+    }
+
+    .msg {
+      margin: 10px 0;
+      padding: 10px;
+      background: #2a2a2a;
+      border-left: 4px solid #00bcd4;
+      border-radius: 6px;
+    }
+
+    #form {
+      padding: 10px;
+      background: #222;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+    }
+
+    input {
+      background: #333;
+      color: #f1f1f1;
+      flex: 1;
+    }
+
+    input::placeholder {
+      color: #bbb;
+    }
+
+    button {
+      background-color: #00bcd4;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0097a7;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="chat-box"></div>
+
+  <div id="form">
+    <input type="text" id="name" placeholder="Your name" />
+    <input type="text" id="message" placeholder="Type a message" />
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="clearChat()">Clear Chat</button>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAj5_azudAqwFVpxggUE6kZ9VWbMgU_P_I",
+      authDomain: "thredz-1901b.firebaseapp.com",
+      projectId: "thredz-1901b",
+      storageBucket: "thredz-1901b.firebasestorage.app",
+      messagingSenderId: "754707217410",
+      appId: "1:754707217410:web:ff8991bae537beb400fb1b"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Send message
+    function sendMessage() {
+      const name = document.getElementById("name").value;
+      const message = document.getElementById("message").value;
+      if (name && message) {
+        db.collection("messages").add({
+          name,
+          message,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("message").value = "";
+      }
+    }
+
+    // Clear chat (fixed version using batch)
+    function clearChat() {
+      if (confirm("Are you sure you want to delete all messages?")) {
+        db.collection("messages").get().then(snapshot => {
+          const batch = db.batch();
+          snapshot.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+          return batch.commit();
+        }).then(() => {
+          console.log("Chat cleared successfully.");
+        }).catch(error => {
+          console.error("Error clearing chat:", error);
+          alert("Failed to clear chat. Check the console for details.");
+        });
+      }
+    }
+
+    // Display messages
+    db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
+      const chatBox = document.getElementById("chat-box");
+      chatBox.innerHTML = "";
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        chatBox.innerHTML += `<div class="msg"><strong>${msg.name}:</strong> ${msg.message}</div>`;
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script>
+</body>
+</html>
